@@ -1,30 +1,31 @@
-'use client'
+"use client";
 
-import { useState, useCallback } from 'react'
-import MndaForm from './MndaForm'
-import MndaDocument from './MndaDocument'
-import { MndaFormData, defaultFormData } from '@/types/mnda'
+import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import MndaChat from "./MndaChat";
+import MndaDocument from "./MndaDocument";
+import { MndaFormData, defaultFormData } from "@/types/mnda";
 
 function generateTextDocument(data: MndaFormData): string {
   const mndaTermText =
-    data.mndaTermType === 'fixed'
-      ? `Expires ${data.mndaTermYears} year${data.mndaTermYears === '1' ? '' : 's'} from Effective Date`
-      : 'Continues until terminated in accordance with the terms of the MNDA'
+    data.mndaTermType === "fixed"
+      ? `Expires ${data.mndaTermYears} year${data.mndaTermYears === "1" ? "" : "s"} from Effective Date`
+      : "Continues until terminated in accordance with the terms of the MNDA";
 
   const confidentialityText =
-    data.confidentialityTermType === 'fixed'
-      ? `${data.confidentialityTermYears} year${data.confidentialityTermYears === '1' ? '' : 's'} from Effective Date, but in the case of trade secrets until Confidential Information is no longer considered a trade secret under applicable laws`
-      : 'In perpetuity'
+    data.confidentialityTermType === "fixed"
+      ? `${data.confidentialityTermYears} year${data.confidentialityTermYears === "1" ? "" : "s"} from Effective Date, but in the case of trade secrets until Confidential Information is no longer considered a trade secret under applicable laws`
+      : "In perpetuity";
 
   const effectiveDateDisplay = data.effectiveDate
-    ? new Date(data.effectiveDate + 'T00:00:00').toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
+    ? new Date(data.effectiveDate + "T00:00:00").toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       })
-    : '[Effective Date]'
+    : "[Effective Date]";
 
-  const pad = (s: string, n: number) => s.padEnd(n)
+  const pad = (s: string, n: number) => s.padEnd(n);
 
   return `MUTUAL NON-DISCLOSURE AGREEMENT
 Common Paper Mutual NDA — Version 1.0
@@ -34,7 +35,7 @@ COVER PAGE
 ----------
 
 Purpose:
-${data.purpose || '[Not specified]'}
+${data.purpose || "[Not specified]"}
 
 Effective Date: ${effectiveDateDisplay}
 
@@ -42,10 +43,10 @@ MNDA Term: ${mndaTermText}
 
 Term of Confidentiality: ${confidentialityText}
 
-Governing Law: ${data.governingLaw || '[Not specified]'}
+Governing Law: ${data.governingLaw || "[Not specified]"}
 
-Jurisdiction: ${data.jurisdiction || '[Not specified]'}
-${data.modifications.trim() ? `\nMNDA Modifications:\n${data.modifications}\n` : ''}
+Jurisdiction: ${data.jurisdiction || "[Not specified]"}
+${data.modifications.trim() ? `\nMNDA Modifications:\n${data.modifications}\n` : ""}
 By signing this Cover Page, each party agrees to enter into this MNDA as of the Effective Date.
 
                     PARTY 1                          PARTY 2
@@ -86,94 +87,107 @@ STANDARD TERMS
 Common Paper Mutual Non-Disclosure Agreement Version 1.0
 Free to use under CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
 Source: https://commonpaper.com/standards/mutual-nda/1.0/
-`
+`;
 }
 
 export default function MndaApp() {
-  const [formData, setFormData] = useState<MndaFormData>(defaultFormData)
-  const [mobileTab, setMobileTab] = useState<'form' | 'preview'>('form')
-  const [pdfLoading, setPdfLoading] = useState(false)
+  const router = useRouter();
+  const [formData, setFormData] = useState<MndaFormData>(defaultFormData);
+  const [mobileTab, setMobileTab] = useState<"chat" | "preview">("chat");
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const handleLogout = () => {
+    localStorage.removeItem("loggedIn");
+    router.push("/login/");
+  };
 
   const handleDownloadPdf = useCallback(async () => {
-    const element = document.getElementById('mnda-document')
-    if (!element) return
+    const element = document.getElementById("mnda-document");
+    if (!element) return;
 
-    setPdfLoading(true)
+    setPdfLoading(true);
     try {
-      // html-to-image serialises the DOM into an SVG foreignObject so the
-      // browser renders it natively — no custom CSS parser, no oklch errors.
-      const { toPng } = await import('html-to-image')
-      const { jsPDF } = await import('jspdf')
+      const { toPng } = await import("html-to-image");
+      const { jsPDF } = await import("jspdf");
 
       const dataUrl = await toPng(element, {
         pixelRatio: 2,
-        backgroundColor: '#ffffff',
-      })
+        backgroundColor: "#ffffff",
+      });
 
-      // Derive rendered pixel dimensions from the element itself.
-      const naturalWidth = element.scrollWidth * 2
-      const naturalHeight = element.scrollHeight * 2
+      const naturalWidth = element.scrollWidth * 2;
+      const naturalHeight = element.scrollHeight * 2;
 
-      const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
-      const pageWidth = pdf.internal.pageSize.getWidth()
-      const pageHeight = pdf.internal.pageSize.getHeight()
+      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
 
-      const imgWidth = pageWidth
-      const imgHeight = (naturalHeight * pageWidth) / naturalWidth
+      const imgWidth = pageWidth;
+      const imgHeight = (naturalHeight * pageWidth) / naturalWidth;
 
-      let heightLeft = imgHeight
-      let position = 0
+      let heightLeft = imgHeight;
+      let position = 0;
 
-      pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight)
-      heightLeft -= pageHeight
+      pdf.addImage(dataUrl, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
 
       while (heightLeft > 0) {
-        position -= pageHeight
-        pdf.addPage()
-        pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight)
-        heightLeft -= pageHeight
+        position -= pageHeight;
+        pdf.addPage();
+        pdf.addImage(dataUrl, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
       }
 
-      pdf.save('mutual-nda.pdf')
+      pdf.save("mutual-nda.pdf");
     } finally {
-      setPdfLoading(false)
+      setPdfLoading(false);
     }
-  }, [])
+  }, []);
 
   const handleDownloadText = useCallback(() => {
-    const text = generateTextDocument(formData)
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'mutual-nda.txt'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }, [formData])
+    const text = generateTextDocument(formData);
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "mutual-nda.txt";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [formData]);
 
   return (
     <div className="flex flex-col h-screen print:h-auto print:block">
       {/* Header */}
-      <header className="flex-none bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between print:hidden">
+      <header className="flex-none bg-brand-navy px-4 py-3 flex items-center justify-between print:hidden">
         <div>
-          <h1 className="text-lg font-bold text-gray-900 leading-tight">Mutual NDA Creator</h1>
-          <p className="text-xs text-gray-500">Common Paper Mutual NDA — Version 1.0</p>
+          <h1 className="text-lg font-bold text-white leading-tight">
+            Mutual NDA Creator
+          </h1>
+          <p className="text-xs text-white/60">
+            Common Paper Mutual NDA — Version 1.0
+          </p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={handleDownloadText}
-            className="px-3 py-1.5 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50 transition-colors"
+            className="px-3 py-1.5 text-sm border border-white/30 rounded text-white hover:bg-white/10 transition-colors"
           >
             Download .txt
           </button>
           <button
             onClick={handleDownloadPdf}
             disabled={pdfLoading}
-            className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            className="px-3 py-1.5 text-sm bg-brand-purple text-white rounded hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {pdfLoading ? 'Generating…' : 'Download PDF'}
+            {pdfLoading ? "Generating..." : "Download PDF"}
+          </button>
+          <button
+            onClick={handleLogout}
+            className="px-3 py-1.5 text-sm border border-white/30 rounded text-white hover:bg-white/10 transition-colors"
+          >
+            Sign Out
           </button>
         </div>
       </header>
@@ -182,41 +196,41 @@ export default function MndaApp() {
       <div className="flex-none flex border-b border-gray-200 bg-white lg:hidden print:hidden">
         <button
           className={`flex-1 py-2 text-sm font-medium transition-colors ${
-            mobileTab === 'form'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-500 hover:text-gray-700'
+            mobileTab === "chat"
+              ? "text-brand-blue border-b-2 border-brand-blue"
+              : "text-gray-500 hover:text-gray-700"
           }`}
-          onClick={() => setMobileTab('form')}
+          onClick={() => setMobileTab("chat")}
         >
-          Form
+          Chat
         </button>
         <button
           className={`flex-1 py-2 text-sm font-medium transition-colors ${
-            mobileTab === 'preview'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-500 hover:text-gray-700'
+            mobileTab === "preview"
+              ? "text-brand-blue border-b-2 border-brand-blue"
+              : "text-gray-500 hover:text-gray-700"
           }`}
-          onClick={() => setMobileTab('preview')}
+          onClick={() => setMobileTab("preview")}
         >
-          Preview
+          Document
         </button>
       </div>
 
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden print:overflow-visible print:block">
-        {/* Form panel */}
+        {/* Chat panel */}
         <aside
-          className={`w-full lg:w-2/5 xl:w-1/3 bg-white border-r border-gray-200 overflow-y-auto p-5 print:hidden ${
-            mobileTab === 'preview' ? 'hidden lg:block' : ''
+          className={`w-full lg:w-2/5 xl:w-1/3 bg-white border-r border-gray-200 flex flex-col print:hidden ${
+            mobileTab === "preview" ? "hidden lg:flex" : ""
           }`}
         >
-          <MndaForm data={formData} onChange={setFormData} />
+          <MndaChat formData={formData} onFormDataChange={setFormData} />
         </aside>
 
         {/* Document panel */}
         <main
           className={`w-full lg:w-3/5 xl:w-2/3 overflow-y-auto bg-gray-100 print:bg-white ${
-            mobileTab === 'form' ? 'hidden lg:block' : ''
+            mobileTab === "chat" ? "hidden lg:block" : ""
           }`}
         >
           <div className="py-6 px-4 print:p-0">
@@ -225,5 +239,5 @@ export default function MndaApp() {
         </main>
       </div>
     </div>
-  )
+  );
 }

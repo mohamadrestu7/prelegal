@@ -1,22 +1,16 @@
 @import "tailwindcss";
 
+@theme {
+  --color-brand-navy: #032147;
+  --color-brand-blue: #209d77;
+  --color-brand-purple: #753991;
+  --color-brand-yellow: #ecad0a;
+  --color-brand-gray: #888888;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
@@ -41,7 +35,7 @@ body {
     width: 100%;
     max-width: none;
     padding: 1.5cm 2cm;
-    font-family: 'Times New Roman', Times, serif;
+    font-family: "Times New Roman", Times, serif;
     font-size: 11pt;
     line-height: 1.6;
     color: black;

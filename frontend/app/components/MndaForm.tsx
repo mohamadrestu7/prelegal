@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { MndaFormData } from '@/types/mnda'
+import { MndaFormData } from "@/types/mnda";
 
 interface Props {
-  data: MndaFormData
-  onChange: (data: MndaFormData) => void
+  data: MndaFormData;
+  onChange: (data: MndaFormData) => void;
 }
 
 function FieldGroup({
@@ -12,34 +12,36 @@ function FieldGroup({
   hint,
   children,
 }: {
-  label: string
-  hint?: string
-  children: React.ReactNode
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
 }) {
   return (
     <div className="mb-5">
-      <label className="block text-sm font-semibold text-gray-700 mb-0.5">{label}</label>
+      <label className="block text-sm font-semibold text-gray-700 mb-0.5">
+        {label}
+      </label>
       {hint && <p className="text-xs text-gray-500 mb-1">{hint}</p>}
       {children}
     </div>
-  )
+  );
 }
 
 const inputClass =
-  'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+  "w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent";
 
 export default function MndaForm({ data, onChange }: Props) {
   const update = (field: keyof MndaFormData, value: string) =>
-    onChange({ ...data, [field]: value })
+    onChange({ ...data, [field]: value });
 
   return (
     <form onSubmit={(e) => e.preventDefault()}>
       <FieldGroup label="Purpose" hint="How Confidential Information may be used">
         <textarea
-          className={inputClass + ' resize-none'}
+          className={inputClass + " resize-none"}
           rows={3}
           value={data.purpose}
-          onChange={(e) => update('purpose', e.target.value)}
+          onChange={(e) => update("purpose", e.target.value)}
           placeholder="Evaluating whether to enter into a business relationship..."
         />
       </FieldGroup>
@@ -49,7 +51,7 @@ export default function MndaForm({ data, onChange }: Props) {
           type="date"
           className={inputClass}
           value={data.effectiveDate}
-          onChange={(e) => update('effectiveDate', e.target.value)}
+          onChange={(e) => update("effectiveDate", e.target.value)}
         />
       </FieldGroup>
 
@@ -60,8 +62,8 @@ export default function MndaForm({ data, onChange }: Props) {
               type="radio"
               name="mndaTermType"
               className="mt-1 shrink-0"
-              checked={data.mndaTermType === 'fixed'}
-              onChange={() => update('mndaTermType', 'fixed')}
+              checked={data.mndaTermType === "fixed"}
+              onChange={() => update("mndaTermType", "fixed")}
             />
             <div className="flex items-center gap-1 flex-wrap">
               <span>Expires</span>
@@ -69,10 +71,10 @@ export default function MndaForm({ data, onChange }: Props) {
                 type="number"
                 min="1"
                 max="99"
-                className="w-16 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
+                className="w-16 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue disabled:bg-gray-100 disabled:text-gray-400"
                 value={data.mndaTermYears}
-                onChange={(e) => update('mndaTermYears', e.target.value)}
-                disabled={data.mndaTermType !== 'fixed'}
+                onChange={(e) => update("mndaTermYears", e.target.value)}
+                disabled={data.mndaTermType !== "fixed"}
               />
               <span>year(s) from Effective Date</span>
             </div>
@@ -81,8 +83,8 @@ export default function MndaForm({ data, onChange }: Props) {
             <input
               type="radio"
               name="mndaTermType"
-              checked={data.mndaTermType === 'at-will'}
-              onChange={() => update('mndaTermType', 'at-will')}
+              checked={data.mndaTermType === "at-will"}
+              onChange={() => update("mndaTermType", "at-will")}
             />
             <span>Continues until terminated</span>
           </label>
@@ -99,18 +101,18 @@ export default function MndaForm({ data, onChange }: Props) {
               type="radio"
               name="confidentialityTermType"
               className="mt-1 shrink-0"
-              checked={data.confidentialityTermType === 'fixed'}
-              onChange={() => update('confidentialityTermType', 'fixed')}
+              checked={data.confidentialityTermType === "fixed"}
+              onChange={() => update("confidentialityTermType", "fixed")}
             />
             <div className="flex items-center gap-1 flex-wrap">
               <input
                 type="number"
                 min="1"
                 max="99"
-                className="w-16 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
+                className="w-16 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue disabled:bg-gray-100 disabled:text-gray-400"
                 value={data.confidentialityTermYears}
-                onChange={(e) => update('confidentialityTermYears', e.target.value)}
-                disabled={data.confidentialityTermType !== 'fixed'}
+                onChange={(e) => update("confidentialityTermYears", e.target.value)}
+                disabled={data.confidentialityTermType !== "fixed"}
               />
               <span>year(s) from Effective Date (+ trade secrets)</span>
             </div>
@@ -119,8 +121,8 @@ export default function MndaForm({ data, onChange }: Props) {
             <input
               type="radio"
               name="confidentialityTermType"
-              checked={data.confidentialityTermType === 'perpetual'}
-              onChange={() => update('confidentialityTermType', 'perpetual')}
+              checked={data.confidentialityTermType === "perpetual"}
+              onChange={() => update("confidentialityTermType", "perpetual")}
             />
             <span>In perpetuity</span>
           </label>
@@ -132,7 +134,7 @@ export default function MndaForm({ data, onChange }: Props) {
           type="text"
           className={inputClass}
           value={data.governingLaw}
-          onChange={(e) => update('governingLaw', e.target.value)}
+          onChange={(e) => update("governingLaw", e.target.value)}
           placeholder="e.g. Delaware"
         />
       </FieldGroup>
@@ -142,17 +144,20 @@ export default function MndaForm({ data, onChange }: Props) {
           type="text"
           className={inputClass}
           value={data.jurisdiction}
-          onChange={(e) => update('jurisdiction', e.target.value)}
+          onChange={(e) => update("jurisdiction", e.target.value)}
           placeholder='e.g. courts located in New Castle, DE'
         />
       </FieldGroup>
 
-      <FieldGroup label="Modifications (optional)" hint="Any modifications to the standard terms">
+      <FieldGroup
+        label="Modifications (optional)"
+        hint="Any modifications to the standard terms"
+      >
         <textarea
-          className={inputClass + ' resize-none'}
+          className={inputClass + " resize-none"}
           rows={3}
           value={data.modifications}
-          onChange={(e) => update('modifications', e.target.value)}
+          onChange={(e) => update("modifications", e.target.value)}
           placeholder="List any modifications to the standard terms..."
         />
       </FieldGroup>
@@ -161,13 +166,13 @@ export default function MndaForm({ data, onChange }: Props) {
         <h3 className="text-sm font-semibold text-gray-700 mb-3">Party 1</h3>
         <div className="space-y-3">
           {[
-            { field: 'party1PrintName' as const, label: 'Print Name', placeholder: 'Full name' },
-            { field: 'party1Title' as const, label: 'Title', placeholder: 'e.g. CEO' },
-            { field: 'party1Company' as const, label: 'Company', placeholder: 'Company name' },
+            { field: "party1PrintName" as const, label: "Print Name", placeholder: "Full name" },
+            { field: "party1Title" as const, label: "Title", placeholder: "e.g. CEO" },
+            { field: "party1Company" as const, label: "Company", placeholder: "Company name" },
             {
-              field: 'party1Address' as const,
-              label: 'Notice Address',
-              placeholder: 'Email or postal address',
+              field: "party1Address" as const,
+              label: "Notice Address",
+              placeholder: "Email or postal address",
             },
           ].map(({ field, label, placeholder }) => (
             <div key={field}>
@@ -188,13 +193,13 @@ export default function MndaForm({ data, onChange }: Props) {
         <h3 className="text-sm font-semibold text-gray-700 mb-3">Party 2</h3>
         <div className="space-y-3">
           {[
-            { field: 'party2PrintName' as const, label: 'Print Name', placeholder: 'Full name' },
-            { field: 'party2Title' as const, label: 'Title', placeholder: 'e.g. CEO' },
-            { field: 'party2Company' as const, label: 'Company', placeholder: 'Company name' },
+            { field: "party2PrintName" as const, label: "Print Name", placeholder: "Full name" },
+            { field: "party2Title" as const, label: "Title", placeholder: "e.g. CEO" },
+            { field: "party2Company" as const, label: "Company", placeholder: "Company name" },
             {
-              field: 'party2Address' as const,
-              label: 'Notice Address',
-              placeholder: 'Email or postal address',
+              field: "party2Address" as const,
+              label: "Notice Address",
+              placeholder: "Email or postal address",
             },
           ].map(({ field, label, placeholder }) => (
             <div key={field}>
@@ -211,5 +216,5 @@ export default function MndaForm({ data, onChange }: Props) {
         </div>
       </div>
     </form>
-  )
+  );
 }
