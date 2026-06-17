@@ -92,9 +92,49 @@ Source: https://commonpaper.com/standards/mutual-nda/1.0/
 export default function MndaApp() {
   const [formData, setFormData] = useState<MndaFormData>(defaultFormData)
   const [mobileTab, setMobileTab] = useState<'form' | 'preview'>('form')
+  const [pdfLoading, setPdfLoading] = useState(false)
 
-  const handlePrint = useCallback(() => {
-    window.print()
+  const handleDownloadPdf = useCallback(async () => {
+    const element = document.getElementById('mnda-document')
+    if (!element) return
+
+    setPdfLoading(true)
+    try {
+      const html2canvas = (await import('html2canvas')).default
+      const { jsPDF } = await import('jspdf')
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      })
+
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
+
+      const pageWidth = pdf.internal.pageSize.getWidth()
+      const pageHeight = pdf.internal.pageSize.getHeight()
+      const imgWidth = pageWidth
+      const imgHeight = (canvas.height * pageWidth) / canvas.width
+
+      let heightLeft = imgHeight
+      let position = 0
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+      heightLeft -= pageHeight
+
+      while (heightLeft > 0) {
+        position -= pageHeight
+        pdf.addPage()
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+        heightLeft -= pageHeight
+      }
+
+      pdf.save('mutual-nda.pdf')
+    } finally {
+      setPdfLoading(false)
+    }
   }, [])
 
   const handleDownloadText = useCallback(() => {
@@ -126,10 +166,11 @@ export default function MndaApp() {
             Download .txt
           </button>
           <button
-            onClick={handlePrint}
-            className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            onClick={handleDownloadPdf}
+            disabled={pdfLoading}
+            className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Download PDF
+            {pdfLoading ? 'Generating…' : 'Download PDF'}
           </button>
         </div>
       </header>
