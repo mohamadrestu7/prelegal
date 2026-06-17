@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import MndaApp from "./components/MndaApp";
+import DocumentApp from "./components/DocumentApp";
 
 export default function Page() {
   const router = useRouter();
@@ -18,5 +18,5 @@ export default function Page() {
 
   if (!ready) return null;
 
-  return <MndaApp />;
+  return <DocumentApp />;
 }
