@@ -100,34 +100,37 @@ export default function MndaApp() {
 
     setPdfLoading(true)
     try {
-      const html2canvas = (await import('html2canvas')).default
+      // html-to-image serialises the DOM into an SVG foreignObject so the
+      // browser renders it natively — no custom CSS parser, no oklch errors.
+      const { toPng } = await import('html-to-image')
       const { jsPDF } = await import('jspdf')
 
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
+      const dataUrl = await toPng(element, {
+        pixelRatio: 2,
         backgroundColor: '#ffffff',
       })
 
-      const imgData = canvas.toDataURL('image/png')
-      const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
+      // Derive rendered pixel dimensions from the element itself.
+      const naturalWidth = element.scrollWidth * 2
+      const naturalHeight = element.scrollHeight * 2
 
+      const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
       const pageWidth = pdf.internal.pageSize.getWidth()
       const pageHeight = pdf.internal.pageSize.getHeight()
+
       const imgWidth = pageWidth
-      const imgHeight = (canvas.height * pageWidth) / canvas.width
+      const imgHeight = (naturalHeight * pageWidth) / naturalWidth
 
       let heightLeft = imgHeight
       let position = 0
 
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+      pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight)
       heightLeft -= pageHeight
 
       while (heightLeft > 0) {
         position -= pageHeight
         pdf.addPage()
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+        pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight)
         heightLeft -= pageHeight
       }
 
