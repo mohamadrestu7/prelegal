@@ -12,11 +12,11 @@ WORKDIR /app/backend
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-COPY backend/pyproject.toml .
-RUN uv pip install --system fastapi "uvicorn[standard]"
+COPY backend/pyproject.toml backend/uv.lock ./
+RUN uv sync --frozen --no-dev
 
 COPY backend/ .
 COPY --from=frontend-builder /app/frontend/out ./static
 
 EXPOSE 8000
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

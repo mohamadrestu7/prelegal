@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import MndaForm from "./MndaForm";
+import MndaChat from "./MndaChat";
 import MndaDocument from "./MndaDocument";
 import { MndaFormData, defaultFormData } from "@/types/mnda";
 
@@ -93,7 +93,7 @@ Source: https://commonpaper.com/standards/mutual-nda/1.0/
 export default function MndaApp() {
   const router = useRouter();
   const [formData, setFormData] = useState<MndaFormData>(defaultFormData);
-  const [mobileTab, setMobileTab] = useState<"form" | "preview">("form");
+  const [mobileTab, setMobileTab] = useState<"chat" | "preview">("chat");
   const [pdfLoading, setPdfLoading] = useState(false);
 
   const handleLogout = () => {
@@ -196,13 +196,13 @@ export default function MndaApp() {
       <div className="flex-none flex border-b border-gray-200 bg-white lg:hidden print:hidden">
         <button
           className={`flex-1 py-2 text-sm font-medium transition-colors ${
-            mobileTab === "form"
+            mobileTab === "chat"
               ? "text-brand-blue border-b-2 border-brand-blue"
               : "text-gray-500 hover:text-gray-700"
           }`}
-          onClick={() => setMobileTab("form")}
+          onClick={() => setMobileTab("chat")}
         >
-          Form
+          Chat
         </button>
         <button
           className={`flex-1 py-2 text-sm font-medium transition-colors ${
@@ -212,25 +212,25 @@ export default function MndaApp() {
           }`}
           onClick={() => setMobileTab("preview")}
         >
-          Preview
+          Document
         </button>
       </div>
 
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden print:overflow-visible print:block">
-        {/* Form panel */}
+        {/* Chat panel */}
         <aside
-          className={`w-full lg:w-2/5 xl:w-1/3 bg-white border-r border-gray-200 overflow-y-auto p-5 print:hidden ${
-            mobileTab === "preview" ? "hidden lg:block" : ""
+          className={`w-full lg:w-2/5 xl:w-1/3 bg-white border-r border-gray-200 flex flex-col print:hidden ${
+            mobileTab === "preview" ? "hidden lg:flex" : ""
           }`}
         >
-          <MndaForm data={formData} onChange={setFormData} />
+          <MndaChat formData={formData} onFormDataChange={setFormData} />
         </aside>
 
         {/* Document panel */}
         <main
           className={`w-full lg:w-3/5 xl:w-2/3 overflow-y-auto bg-gray-100 print:bg-white ${
-            mobileTab === "form" ? "hidden lg:block" : ""
+            mobileTab === "chat" ? "hidden lg:block" : ""
           }`}
         >
           <div className="py-6 px-4 print:p-0">
