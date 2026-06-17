@@ -16,6 +16,7 @@ COPY backend/pyproject.toml backend/uv.lock ./
 RUN uv sync --frozen --no-dev
 
 COPY backend/ .
+COPY templates/ /app/templates/
 COPY --from=frontend-builder /app/frontend/out ./static
 
 EXPOSE 8000

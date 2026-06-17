@@ -19,17 +19,34 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Document template field highlights */
+.field-filled {
+  background-color: rgba(236, 173, 10, 0.18);
+  padding: 0 2px;
+  border-radius: 2px;
+  font-weight: 600;
+  font-style: normal;
+}
+
+.field-empty {
+  color: #888888;
+  font-style: italic;
+}
+
 @media print {
   body * {
     visibility: hidden;
   }
 
   #mnda-document,
-  #mnda-document * {
+  #mnda-document *,
+  #doc-preview,
+  #doc-preview * {
     visibility: visible;
   }
 
-  #mnda-document {
+  #mnda-document,
+  #doc-preview {
     position: absolute;
     inset: 0;
     width: 100%;

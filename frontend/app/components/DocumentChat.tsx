@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { MndaFormData } from "@/types/mnda";
 
 interface Message {
   id: string;
@@ -10,18 +9,21 @@ interface Message {
 }
 
 interface Props {
-  formData: MndaFormData;
-  onFormDataChange: (data: MndaFormData) => void;
+  docType: string | null;
+  fields: Record<string, string>;
+  onDocTypeChange: (docType: string | null) => void;
+  onFieldsChange: (fields: Record<string, string>) => void;
 }
 
 async function fetchChatReply(
   messages: { role: string; content: string }[],
-  currentFields: MndaFormData
-): Promise<{ reply: string; fields: MndaFormData }> {
-  const res = await fetch("/api/chat/mnda", {
+  currentDocType: string | null,
+  currentFields: Record<string, string>
+): Promise<{ reply: string; docType: string | null; fields: Record<string, string> }> {
+  const res = await fetch("/api/chat/doc", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages, currentFields }),
+    body: JSON.stringify({ messages, currentDocType, currentFields }),
   });
   if (!res.ok) throw new Error(`Request failed: ${res.status}`);
   return res.json();
@@ -34,7 +36,12 @@ function toApiMessages(msgs: Message[]) {
   }));
 }
 
-export default function MndaChat({ formData, onFormDataChange }: Props) {
+export default function DocumentChat({
+  docType,
+  fields,
+  onDocTypeChange,
+  onFieldsChange,
+}: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -42,39 +49,37 @@ export default function MndaChat({ formData, onFormDataChange }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mountedRef = useRef(false);
 
-  // Scroll message list to bottom whenever messages or loading state changes
+  // Scroll to bottom on new messages or loading state change
   useEffect(() => {
     if (listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight;
     }
   }, [messages, loading]);
 
-  // Re-focus textarea when AI finishes responding
+  // Re-focus textarea when AI finishes responding (not on initial mount)
   useEffect(() => {
-    if (!loading) {
+    if (!loading && mountedRef.current) {
       textareaRef.current?.focus();
     }
   }, [loading]);
 
-  // Fire opening greeting on mount
+  // Opening greeting on mount
   useEffect(() => {
     if (mountedRef.current) return;
     mountedRef.current = true;
 
     setLoading(true);
-    fetchChatReply([], formData)
-      .then(({ reply, fields }) => {
+    fetchChatReply([], null, {})
+      .then(({ reply, docType: dt, fields: f }) => {
         setMessages([{ id: crypto.randomUUID(), role: "ai", text: reply }]);
-        onFormDataChange(fields);
+        if (dt) { onDocTypeChange(dt); onFieldsChange(f); }
       })
       .catch(() => {
-        setMessages([
-          {
-            id: crypto.randomUUID(),
-            role: "ai",
-            text: "Hello! I'm here to help you draft a Mutual NDA. What's the purpose of this agreement?",
-          },
-        ]);
+        setMessages([{
+          id: crypto.randomUUID(),
+          role: "ai",
+          text: "Hello! I can help you create a legal document. What kind of document do you need today?",
+        }]);
       })
       .finally(() => setLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -93,12 +98,21 @@ export default function MndaChat({ formData, onFormDataChange }: Props) {
     setLoading(true);
 
     try {
-      const response = await fetchChatReply(toApiMessages(nextMessages), formData);
+      const response = await fetchChatReply(
+        toApiMessages(nextMessages),
+        docType,
+        fields
+      );
       setMessages((prev) => [
         ...prev,
         { id: crypto.randomUUID(), role: "ai", text: response.reply },
       ]);
-      onFormDataChange(response.fields);
+      if (response.docType !== docType && (response.docType !== null || docType !== null)) {
+        onDocTypeChange(response.docType);
+      }
+      if (response.fields && Object.keys(response.fields).length > 0) {
+        onFieldsChange(response.fields);
+      }
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -116,9 +130,7 @@ export default function MndaChat({ formData, onFormDataChange }: Props) {
   const handleSend = () => {
     const text = inputValue;
     setInputValue("");
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-    }
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
     sendMessage(text);
   };
 
