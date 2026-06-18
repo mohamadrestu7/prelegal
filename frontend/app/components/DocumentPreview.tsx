@@ -33,23 +33,23 @@ function substituteFields(content: string, fields: Record<string, string>): stri
 
 export default function DocumentPreview({ docType, fields }: Props) {
   const [templateContent, setTemplateContent] = useState<string | null>(null);
-  const [fetchError, setFetchError] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!docType) {
       setTemplateContent(null);
-      setFetchError(false);
+      setFetchError(null);
       return;
     }
-    setFetchError(false);
+    setFetchError(null);
     setTemplateContent(null);
     fetch(`/api/templates/${encodeURIComponent(docType)}`)
       .then((r) => {
-        if (!r.ok) throw new Error("not found");
+        if (!r.ok) throw new Error(`HTTP ${r.status} for ${docType}`);
         return r.text();
       })
       .then(setTemplateContent)
-      .catch(() => setFetchError(true));
+      .catch((e: Error) => setFetchError(e.message));
   }, [docType]);
 
   if (!docType) {
@@ -65,7 +65,7 @@ export default function DocumentPreview({ docType, fields }: Props) {
   if (fetchError) {
     return (
       <div className="py-6 px-4">
-        <p className="text-sm text-red-500">Could not load document template.</p>
+        <p className="text-sm text-red-500">Could not load template: {fetchError}</p>
       </div>
     );
   }

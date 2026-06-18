@@ -99,15 +99,54 @@ Rules:
 - Be concise, professional, and friendly."""
 
 
+_ABBREVIATIONS: dict[str, str] = {
+    "nda": "Mutual-NDA.md",
+    "mnda": "Mutual-NDA.md",
+    "mutual nda": "Mutual-NDA.md",
+    "csa": "CSA.md",
+    "sla": "sla.md",
+    "psa": "psa.md",
+    "dpa": "DPA.md",
+    "baa": "BAA.md",
+}
+
+# Cover page is not a standalone selectable document
+_SELECTABLE = [e for e in CATALOG if e["filename"] != "Mutual-NDA-coverpage.md"]
+
+
+def _normalize_doc_type(doc_type: str | None) -> str | None:
+    """Map AI docType responses to the canonical catalog filename."""
+    if not doc_type:
+        return None
+    # Exact match
+    for entry in _SELECTABLE:
+        if entry["filename"] == doc_type:
+            return doc_type
+    lower = doc_type.lower()
+    # Common abbreviations
+    if lower in _ABBREVIATIONS:
+        return _ABBREVIATIONS[lower]
+    # Case-insensitive filename match (with or without .md)
+    candidate = lower if lower.endswith(".md") else f"{lower}.md"
+    for entry in _SELECTABLE:
+        if entry["filename"].lower() == candidate:
+            return entry["filename"]
+    # Document name match
+    for entry in _SELECTABLE:
+        if entry["name"].lower() == lower or lower in entry["name"].lower():
+            return entry["filename"]
+    return None
+
+
 def _build_discovery_prompt() -> str:
     docs = [e for e in CATALOG if e["filename"] != "Mutual-NDA-coverpage.md"]
     doc_list = "\n".join(
-        f'- {e["name"]}: {e["description"]} (docType: "{e["filename"]}")'
+        f'- {e["name"]} → docType="{e["filename"]}"'
         for e in docs
     )
     return f"""You are a legal assistant that helps users create standard legal documents.
 
-Supported document types:
+Supported document types (you MUST use the exact docType string shown):
 {doc_list}
 
 Your task:
@@ -117,10 +156,10 @@ Your task:
 4. Once you have identified the document, confirm the choice with the user before proceeding.
 5. ALWAYS end your reply with a question to keep the conversation moving.
 
-Respond with JSON only — no markdown, no explanation outside the JSON:
-{{"reply": "...", "docType": null, "fields": {{}}}}
+IMPORTANT: docType must be one of the exact filename strings listed above (e.g. "CSA.md"), or null if not yet confirmed.
 
-Set docType to the exact filename string (e.g. "Mutual-NDA.md") only once the user confirms the document."""
+Respond with JSON only — no markdown, no explanation outside the JSON:
+{{"reply": "...", "docType": null, "fields": {{}}}}"""
 
 
 def _build_filling_prompt(doc_filename: str, doc_name: str, current_fields: dict) -> str:
@@ -265,7 +304,9 @@ async def chat_doc(req: DocChatRequest):
         result = json.loads(completion.choices[0].message.content)
         if "reply" not in result:
             raise ValueError("missing reply")
-        result.setdefault("docType", req.currentDocType)
+        # Normalize docType to a valid catalog filename
+        raw_doc_type = result.get("docType", req.currentDocType)
+        result["docType"] = _normalize_doc_type(raw_doc_type) or req.currentDocType
         raw_fields = result.get("fields")
         if isinstance(raw_fields, dict):
             result["fields"] = {k: str(v) if v is not None else "" for k, v in raw_fields.items()}
@@ -278,11 +319,15 @@ async def chat_doc(req: DocChatRequest):
 
 @app.get("/api/templates/{filename}")
 async def get_template(filename: str):
-    path = (TEMPLATES_DIR / filename).resolve()
-    if not str(path).startswith(str(TEMPLATES_DIR.resolve())) or not filename.endswith(".md"):
+    if not filename.endswith(".md"):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    try:
+        path = (TEMPLATES_DIR / filename).resolve()
+        path.relative_to(TEMPLATES_DIR.resolve())  # raises ValueError if outside dir
+    except (ValueError, RuntimeError):
         raise HTTPException(status_code=400, detail="Invalid filename")
     if not path.exists():
-        raise HTTPException(status_code=404, detail="Template not found")
+        raise HTTPException(status_code=404, detail=f"Template not found: {filename}")
     return PlainTextResponse(path.read_text(encoding="utf-8"))
 
 
