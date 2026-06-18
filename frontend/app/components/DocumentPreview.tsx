@@ -18,15 +18,31 @@ const FIELD_LINK_CLASSES = new Set([
   "sow_link",
 ]);
 
+// Normalize smart quotes to ASCII so field name lookups work regardless of
+// whether the template uses curly or straight apostrophes.
+function normalizeKey(s: string): string {
+  return s.replace(/[‘’′ʼ]/g, "'").trim();
+}
+
 function substituteFields(content: string, fields: Record<string, string>): string {
+  // Build a normalized lookup: straight-apostrophe keys → values
+  const lookup: Record<string, string> = {};
+  for (const [k, v] of Object.entries(fields)) {
+    if (v?.trim()) lookup[normalizeKey(k)] = v.trim();
+  }
+
   return content.replace(
     /<span class="([^"]+)">([^<]+)<\/span>/g,
-    (match, cls, fieldName) => {
+    (match, cls, rawName) => {
       if (!FIELD_LINK_CLASSES.has(cls)) return match;
-      const value = fields[fieldName.trim()]?.trim();
+      const key = normalizeKey(rawName);
+      // Try exact key, then key without possessive "'s"
+      const value =
+        lookup[key] ??
+        (key.endsWith("'s") ? lookup[key.slice(0, -2)] : undefined);
       return value
         ? `<mark class="field-filled">${value}</mark>`
-        : `<em class="field-empty">[${fieldName}]</em>`;
+        : `<em class="field-empty">[${rawName.trim()}]</em>`;
     }
   );
 }

@@ -61,15 +61,13 @@ export default function DocumentApp() {
           <p className="text-xs text-white/60">{docLabel}</p>
         </div>
         <div className="flex gap-2">
-          {docType && (
-            <button
-              onClick={handleDownloadPdf}
-              disabled={pdfLoading}
-              className="px-3 py-1.5 text-sm bg-brand-purple text-white rounded hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {pdfLoading ? "Generating..." : "Download PDF"}
-            </button>
-          )}
+          <button
+            onClick={handleDownloadPdf}
+            disabled={pdfLoading || !docType}
+            className="px-3 py-1.5 text-sm bg-brand-purple text-white rounded hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {pdfLoading ? "Generating..." : "Download PDF"}
+          </button>
           <button
             onClick={handleLogout}
             className="px-3 py-1.5 text-sm border border-white/30 rounded text-white hover:bg-white/10 transition-colors"

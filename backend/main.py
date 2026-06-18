@@ -40,11 +40,19 @@ EXTRA_FIELDS: dict[str, list[str]] = {
 }
 
 
+_SMART_QUOTE_TABLE = str.maketrans("‘’′″", "''\"\"")
+
+
+def _normalize_name(s: str) -> str:
+    """Normalize smart quotes to ASCII equivalents in a field name."""
+    return s.translate(_SMART_QUOTE_TABLE).strip()
+
+
 def _extract_span_fields(content: str) -> list[str]:
     seen: set[str] = set()
     fields: list[str] = []
     for cls, name in re.findall(r'<span class="([^"]+)">([^<]+)</span>', content):
-        name = name.strip()
+        name = _normalize_name(name)
         if cls in FIELD_LINK_CLASSES and name not in seen:
             seen.add(name)
             fields.append(name)
@@ -162,25 +170,44 @@ Respond with JSON only — no markdown, no explanation outside the JSON:
 {{"reply": "...", "docType": null, "fields": {{}}}}"""
 
 
+# Essential fields per document — only ask about these, leave everything else as placeholders
+ESSENTIAL_FIELDS: dict[str, list[str]] = {
+    "Mutual-NDA.md": ["Party 1 Name", "Party 2 Name", "Purpose", "Governing Law", "Jurisdiction"],
+    "CSA.md": ["Customer", "Provider", "Effective Date", "Subscription Period", "Governing Law"],
+    "design-partner-agreement.md": ["Partner", "Provider", "Effective Date", "Term", "Program"],
+    "sla.md": ["Customer", "Provider", "Target Uptime", "Target Response Time", "Support Channel"],
+    "psa.md": ["Customer", "Provider", "Effective Date", "Deliverables", "Fees"],
+    "DPA.md": ["Customer", "Provider", "Categories of Personal Data", "Nature and Purpose of Processing"],
+    "Software-License-Agreement.md": ["Customer", "Provider", "Effective Date", "Subscription Period", "Permitted Uses"],
+    "Partnership-Agreement.md": ["Company", "Partner", "Effective Date", "Obligations", "Territory"],
+    "Pilot-Agreement.md": ["Customer", "Provider", "Effective Date", "Pilot Period"],
+    "BAA.md": ["Provider", "Company", "BAA Effective Date", "Breach Notification Period"],
+    "AI-Addendum.md": ["Customer", "Provider", "Training Data", "Training Restrictions"],
+}
+
+
 def _build_filling_prompt(doc_filename: str, doc_name: str, current_fields: dict) -> str:
-    field_list = "\n".join(f"- {f}" for f in DOCUMENT_FIELDS.get(doc_filename, []))
+    essential = ESSENTIAL_FIELDS.get(doc_filename, DOCUMENT_FIELDS.get(doc_filename, [])[:5])
+    unfilled = [f for f in essential if not current_fields.get(f, "").strip()]
+    field_list = "\n".join(f"- {f}" for f in essential)
     return f"""You are a legal assistant helping a user complete a {doc_name}.
 
-Fields to collect:
+Collect ONLY these essential fields, then the document is ready:
 {field_list}
 
-Current field values:
+Current values:
 {json.dumps(current_fields, indent=2)}
 
 Rules:
-1. Ask for 1-2 fields at a time — never present a long list.
-2. ALWAYS end your reply with a question if any fields are still unfilled.
-3. If all fields are complete, confirm with the user and ask if they are happy with the document.
-4. Never invent information the user has not provided.
-5. Preserve all current values — only update fields the user explicitly provides.
+1. Ask for AT MOST 2 fields at a time. Keep replies SHORT.
+2. Once all {len(essential)} essential fields above are filled, say the document is ready — do NOT ask for more information.
+3. Do NOT ask about any fields not listed above; they will remain as placeholders.
+4. Never invent values. Preserve all current values.
+5. If the user seems to have provided the info naturally (e.g. "between Acme and TechCo"), extract both party names without asking again.
+{"6. You still have " + str(len(unfilled)) + " unfilled field(s): " + ", ".join(unfilled) + ". Ask about those next." if unfilled else "6. All essential fields are filled. Confirm the document is ready."}
 
-Respond with JSON only — no markdown, no explanation outside the JSON:
-{{"reply": "...", "docType": "{doc_filename}", "fields": {{...all fields including unchanged ones...}}}}"""
+Respond with JSON only:
+{{"reply": "...", "docType": "{doc_filename}", "fields": {{...all provided values...}}}}"""
 
 
 # ── Pydantic models ────────────────────────────────────────────────────────
