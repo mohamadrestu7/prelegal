@@ -1,25 +1,38 @@
+import hashlib
+import hmac
 import os
+import secrets
 from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 SECRET_KEY = os.getenv("JWT_SECRET", "change-me")
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_DAYS = 30
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bearer_scheme = HTTPBearer()
+
+# PBKDF2-HMAC-SHA256: 260_000 iterations (OWASP 2023 minimum)
+_ITERATIONS = 260_000
+_HASH_NAME = "sha256"
 
 
 def hash_password(plain: str) -> str:
-    return pwd_context.hash(plain)
+    """Return a salted PBKDF2-SHA256 hash as 'salt$hash' hex string."""
+    salt = secrets.token_hex(16)
+    dk = hashlib.pbkdf2_hmac(_HASH_NAME, plain.encode(), salt.encode(), _ITERATIONS)
+    return f"{salt}${dk.hex()}"
 
 
-def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+def verify_password(plain: str, stored: str) -> bool:
+    try:
+        salt, stored_hash = stored.split("$", 1)
+    except ValueError:
+        return False
+    dk = hashlib.pbkdf2_hmac(_HASH_NAME, plain.encode(), salt.encode(), _ITERATIONS)
+    return hmac.compare_digest(dk.hex(), stored_hash)
 
 
 def create_token(user_id: int, email: str) -> str:
